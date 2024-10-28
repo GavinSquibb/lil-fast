@@ -10,15 +10,16 @@ const Button = ({ onClick, children, className }) => (
   </button>
 );
 
-const Input = ({ type, value, onChange, placeholder, className }) => (
+const Input = React.forwardRef(({ type, value, onChange, placeholder, className }, ref) => (
   <input 
     type={type} 
     value={value} 
     onChange={onChange} 
     placeholder={placeholder}
     className={`border rounded px-2 py-1 ${className}`}
+    ref={ref}
   />
-);
+));
 
 const Select = ({ value, onChange, children, className }) => (
   <select 
@@ -32,14 +33,14 @@ const Select = ({ value, onChange, children, className }) => (
 
 const CanvasDrawingApp = () => {
   const canvasRef = useRef(null);
+  const fileInputRef = useRef(null);
+
   const [color, setColor] = useState('#000000');
   const [brushSize, setBrushSize] = useState(5);
   const [isDrawing, setIsDrawing] = useState(false);
   const [prompt, setPrompt] = useState('');
   const [numIterations, setNumIterations] = useState(2);
   const [generatedImage, setGeneratedImage] = useState(null);
-
-  // TODO: Add state for uploaded image
   const [uploadedImage, setUploadedImage] = useState(null);
 
   useEffect(() => {
@@ -49,18 +50,31 @@ const CanvasDrawingApp = () => {
     ctx.fillRect(0, 0, canvas.width, canvas.height);
   }, []);
 
-  // TODO: Implement image upload functionality
-    const handleImageUpload = (e) => {
-      // Implement image upload logic here
-      console.log("Image upload not implemented yet");
-    };
+  const handleImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const img = new Image();
+        img.onload = () => {
+          setUploadedImage(img); // Set the uploaded image to state so we can use it when canvas cleared
+          drawUploadedImage(img); // Also pass to function to draw so we dont need to deal with null state here
+        };
+        img.src = event.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+  };
   
-  // TODO: Implement drawing the uploaded image on canvas
-    const drawUploadedImage = () => {
-      // Implement drawing uploaded image on canvas
-      console.log("Drawing uploaded image not implemented yet");
-    };
-  
+  const drawUploadedImage = (image) => {
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext("2d");
+    if (image) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+    }
+  };
+
   const startDrawing = (e) => {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
@@ -93,17 +107,21 @@ const CanvasDrawingApp = () => {
     setIsDrawing(false);
   };
 
-  const clearCanvas = () => {
+  const clearCanvas = ( clearUpload ) => {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
     ctx.fillStyle = 'white';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-    // TODO: Consider if uploaded image should be redrawn after clearing
+    if (uploadedImage && !clearUpload) drawUploadedImage(uploadedImage);
   };
 
-  // TODO: Implement clearing the uploaded image to remove the uploaded image and reset the canvas to a blank state
   const clearUploadedImage = () => {
-      console.log("Clearing uploaded image not implemented yet");
+    // clear state, canvas and input
+    if (uploadedImage) {
+      setUploadedImage(null);
+      clearCanvas(true);
+      fileInputRef.current.value = '';
+    }
   };
    
 
@@ -135,7 +153,6 @@ const CanvasDrawingApp = () => {
     }
   };
 
-  
 
   return (
     <div className="flex flex-col items-center p-4">
@@ -149,13 +166,14 @@ const CanvasDrawingApp = () => {
         onMouseUp={stopDrawing}
         onMouseOut={stopDrawing}
         className="border border-gray-300"
+        style={{ boxShadow: "rgba(149, 157, 165, 0.2) 0px 8px 24px" }}
       />
       <div className="mt-4 space-y-2 w-full max-w-md">
-      {/* TODO: Implement image upload functionality */}
         <Input
           type="file"
           onChange={handleImageUpload}
           className="w-full"
+          ref={fileInputRef}
         />
         <Input
           type="color"
@@ -187,7 +205,7 @@ const CanvasDrawingApp = () => {
           <option value="1">Rapid</option>
           <option value="10">Enhanced</option>
         </Select>
-        <Button onClick={clearCanvas} className="w-full">Clear Canvas</Button>
+        <Button onClick={() => clearCanvas(false)} className="w-full">Clear Canvas</Button>
         <Button onClick={clearUploadedImage} className="w-full">Clear Uploaded Image</Button>
         <Button onClick={sendToServer} className="w-full">Send to Server</Button>
       </div>
