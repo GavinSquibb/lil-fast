@@ -1,5 +1,4 @@
 - Implemented image upload functionality
 - Added basic spinner during api call
 - Disabled submit button when prompt is empty
-- TODO some styling
-- TODO openAI API to autocomplete prompt input
+- Added openai API autocomplete for prompt (when checking out, will need to add openAI API key as mine has been redacted)

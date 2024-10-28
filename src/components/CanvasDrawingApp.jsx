@@ -178,7 +178,6 @@ const CanvasDrawingApp = () => {
             },
         ],
       });
-      console.log(completion.choices[0].message);
       setPrompt(completion.choices[0].message.content);
     } catch (error) {
       console.error('Error:', error);
