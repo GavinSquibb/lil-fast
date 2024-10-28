@@ -1,4 +1,5 @@
 - Implemented image upload functionality
-- TODO add loading spinners to api call
+- Added basic spinner during api call
+- Disabled submit button when prompt is empty
 - TODO some styling
 - TODO openAI API to autocomplete prompt input

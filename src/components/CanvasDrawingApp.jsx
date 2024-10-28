@@ -1,9 +1,11 @@
 import React, { useRef, useState, useEffect } from 'react';
+import ClimbingBoxLoader from 'react-spinners/ClimbingBoxLoader';
 
 // Basic UI components
-const Button = ({ onClick, children, className }) => (
+const Button = ({ onClick, disabled=false, children, className }) => (
   <button 
     onClick={onClick} 
+    disabled={disabled}
     className={`px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 ${className}`}
   >
     {children}
@@ -42,6 +44,7 @@ const CanvasDrawingApp = () => {
   const [numIterations, setNumIterations] = useState(2);
   const [generatedImage, setGeneratedImage] = useState(null);
   const [uploadedImage, setUploadedImage] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -126,6 +129,7 @@ const CanvasDrawingApp = () => {
    
 
   const sendToServer = async () => {
+    setIsLoading(true);
     const canvas = canvasRef.current;
     const imageBlob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
     
@@ -147,16 +151,17 @@ const CanvasDrawingApp = () => {
       const imageBlob = await response.blob();
       const imageUrl = URL.createObjectURL(imageBlob);
       setGeneratedImage(imageUrl);
+      setIsLoading(false);
     } catch (error) {
       console.error('Error:', error);
       alert('Failed to generate image. Please try again.');
+      setIsLoading(false);
     }
   };
 
 
   return (
     <div className="flex flex-col items-center p-4">
-      
       <canvas
         ref={canvasRef}
         width={512}
@@ -206,9 +211,10 @@ const CanvasDrawingApp = () => {
           <option value="10">Enhanced</option>
         </Select>
         <Button onClick={() => clearCanvas(false)} className="w-full">Clear Canvas</Button>
-        <Button onClick={clearUploadedImage} className="w-full">Clear Uploaded Image</Button>
-        <Button onClick={sendToServer} className="w-full">Send to Server</Button>
+        <Button onClick={clearUploadedImage} disabled={!uploadedImage} className="w-full">Clear Uploaded Image</Button>
+        <Button onClick={sendToServer} disabled={!prompt.length} className="w-full">Send to Server</Button>
       </div>
+      {isLoading && <ClimbingBoxLoader />}
       {generatedImage && (
         <div className="mt-4">
           <h2 className="text-lg font-bold mb-2">Generated Image:</h2>
