@@ -1,5 +1,9 @@
 import React, { useRef, useState, useEffect } from 'react';
 import ClimbingBoxLoader from 'react-spinners/ClimbingBoxLoader';
+import OpenAI from "openai";
+
+// DO NOT COMMIT
+const apiKey = "YOUR-API-KEY-HERE";
 
 // Basic UI components
 const Button = ({ onClick, disabled=false, children, className }) => (
@@ -45,6 +49,9 @@ const CanvasDrawingApp = () => {
   const [generatedImage, setGeneratedImage] = useState(null);
   const [uploadedImage, setUploadedImage] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+
+  const openai = new OpenAI({ apiKey, dangerouslyAllowBrowser: true });
+
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -159,21 +166,40 @@ const CanvasDrawingApp = () => {
     }
   };
 
+  const autocompletePrompt = async () => {
+    try {
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [
+            { role: "system", content: "You are responsible for autocompleting a prompt that a user is creating to provide context to a photo editing program." },
+            {
+                role: "user",
+                content: "Autocomplete the following prompt: " + prompt,
+            },
+        ],
+      });
+      console.log(completion.choices[0].message);
+      setPrompt(completion.choices[0].message.content);
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Failed to autocomplete prompt. Please try again.');
+    }
+  }
 
   return (
     <div className="flex flex-col items-center p-4">
-      <canvas
-        ref={canvasRef}
-        width={512}
-        height={512}
-        onMouseDown={startDrawing}
-        onMouseMove={draw}
-        onMouseUp={stopDrawing}
-        onMouseOut={stopDrawing}
-        className="border border-gray-300"
-        style={{ boxShadow: "rgba(149, 157, 165, 0.2) 0px 8px 24px" }}
-      />
-      <div className="mt-4 space-y-2 w-full max-w-md">
+        <canvas
+          ref={canvasRef}
+          width={512}
+          height={512}
+          onMouseDown={startDrawing}
+          onMouseMove={draw}
+          onMouseUp={stopDrawing}
+          onMouseOut={stopDrawing}
+          className="border border-gray-300"
+          style={{ boxShadow: "rgba(149, 157, 165, 0.2) 0px 8px 24px" }}
+        />
+      <div className="mt-4 space-y-4 w-full max-w-md flex">
         <Input
           type="file"
           onChange={handleImageUpload}
@@ -202,6 +228,7 @@ const CanvasDrawingApp = () => {
           onChange={(e) => setPrompt(e.target.value)}
           className="w-full"
         />
+        <Button onClick={autocompletePrompt} disabled={!apiKey} className="w-full">Autocomplete Prompt</Button>
         <Select
           value={numIterations}
           onChange={(e) => setNumIterations(Number(e.target.value))}
@@ -212,7 +239,7 @@ const CanvasDrawingApp = () => {
         </Select>
         <Button onClick={() => clearCanvas(false)} className="w-full">Clear Canvas</Button>
         <Button onClick={clearUploadedImage} disabled={!uploadedImage} className="w-full">Clear Uploaded Image</Button>
-        <Button onClick={sendToServer} disabled={!prompt.length} className="w-full">Send to Server</Button>
+        <Button onClick={sendToServer} disabled={!prompt.length || isLoading} className="w-full">Send to Server</Button>
       </div>
       {isLoading && <ClimbingBoxLoader />}
       {generatedImage && (
